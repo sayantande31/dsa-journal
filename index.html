@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DSA & System Design Journal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f3;
+    --bg-tertiary: #eeede9;
+    --text: #1a1a18;
+    --text-secondary: #5a5a56;
+    --text-tertiary: #9a9a94;
+    --border: rgba(0,0,0,0.1);
+    --border-md: rgba(0,0,0,0.18);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --accent: #1a1a18;
+    --info-bg: #E6F1FB;
+    --info-text: #185FA5;
+    --green-bg: #EAF3DE;
+    --green-text: #3B6D11;
+    --amber-bg: #FAEEDA;
+    --amber-text: #854F0B;
+    --red-bg: #FCEBEB;
+    --red-text: #A32D2D;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2e2e2c;
+      --text: #f0efe9;
+      --text-secondary: #a8a8a0;
+      --text-tertiary: #6a6a64;
+      --border: rgba(255,255,255,0.1);
+      --border-md: rgba(255,255,255,0.18);
+      --accent: #f0efe9;
+      --info-bg: #042C53;
+      --info-text: #85B7EB;
+      --green-bg: #173404;
+      --green-text: #C0DD97;
+      --amber-bg: #412402;
+      --amber-text: #FAC775;
+      --red-bg: #501313;
+      --red-text: #F09595;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; color: var(--text); text-decoration: none; }
+  .logo i { font-size: 20px; }
+  .header-meta { font-size: 12px; color: var(--text-tertiary); }
+
+  /* Layout */
+  .shell { display: flex; min-height: calc(100vh - 56px); }
+  .sidebar {
+    width: 220px;
+    background: var(--bg);
+    border-right: 0.5px solid var(--border);
+    padding: 1.5rem 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .sidebar-section { margin-bottom: 1.5rem; }
+  .sidebar-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.07em; padding: 0 1.25rem; margin-bottom: 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 1.25rem;
+    font-size: 14px; color: var(--text-secondary);
+    cursor: pointer; border: none; background: none;
+    width: 100%; text-align: left;
+    transition: all 0.12s;
+    border-left: 2px solid transparent;
+  }
+  .nav-item:hover { background: var(--bg-secondary); color: var(--text); }
+  .nav-item.active { color: var(--text); background: var(--bg-secondary); border-left-color: var(--text); font-weight: 500; }
+  .nav-item i { font-size: 17px; }
+  .nav-badge { margin-left: auto; background: var(--bg-tertiary); color: var(--text-tertiary); font-size: 11px; padding: 1px 7px; border-radius: 99px; }
+
+  /* Main */
+  .main { flex: 1; padding: 2rem; overflow-y: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Page header */
+  .page-header { margin-bottom: 1.5rem; }
+  .page-title { font-size: 20px; font-weight: 600; color: var(--text); }
+  .page-sub { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+
+  /* Stats grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
+  .stat-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
+  .stat-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+
+  /* Heatmap */
+  .heatmap-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .streak-pill { background: var(--amber-bg); color: var(--amber-text); font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+  .heatmap-grid { display: flex; gap: 3px; flex-wrap: wrap; }
+  .hm-cell { width: 14px; height: 14px; border-radius: 3px; background: var(--bg-secondary); }
+  .hm-cell.c1 { background: #C0DD97; }
+  .hm-cell.c2 { background: #97C459; }
+  .hm-cell.c3 { background: #639922; }
+  .hm-cell.c4 { background: #3B6D11; }
+
+  /* Section title */
+  .section-label { font-size: 12px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+
+  /* Form card */
+  .form-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; max-width: 720px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+  input[type=text], input[type=url], select, textarea {
+    font-family: inherit; font-size: 13px;
+    background: var(--bg-secondary); color: var(--text);
+    border: 0.5px solid var(--border-md); border-radius: var(--radius-md);
+    padding: 8px 12px; width: 100%;
+    outline: none; transition: border-color 0.15s;
+  }
+  input[type=text]:focus, input[type=url]:focus, select:focus, textarea:focus { border-color: var(--text); }
+  textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+  select option { background: var(--bg); color: var(--text); }
+
+  /* Tags */
+  .tags-box { background: var(--bg-secondary); border: 0.5px solid var(--border-md); border-radius: var(--radius-md); padding: 8px; min-height: 40px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; cursor: text; }
+  .tag-chip { background: var(--info-bg); color: var(--info-text); font-size: 11px; padding: 2px 8px; border-radius: 99px; display: flex; align-items: center; gap: 4px; }
+  .tag-chip button { border: none; background: none; cursor: pointer; font-size: 14px; color: var(--info-text); line-height: 1; padding: 0; }
+  .tag-presets { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .preset-btn { font-size: 11px; padding: 3px 10px; border-radius: 99px; cursor: pointer; border: 0.5px solid var(--border-md); background: none; color: var(--text-secondary); font-family: inherit; }
+  .preset-btn:hover { background: var(--bg-secondary); color: var(--text); }
+
+  /* Buttons */
+  .btn { font-family: inherit; font-size: 13px; padding: 8px 18px; border-radius: var(--radius-md); cursor: pointer; transition: all 0.12s; border: 0.5px solid var(--border-md); background: none; color: var(--text); }
+  .btn:hover { background: var(--bg-secondary); }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn-primary:hover { opacity: 0.82; background: var(--text); }
+  .btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+  .search-wrap { position: relative; flex: 1; min-width: 180px; }
+  .search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text-tertiary); pointer-events: none; }
+  .search-wrap input { padding-left: 34px; }
+  .chip { font-size: 12px; padding: 5px 13px; border-radius: 99px; border: 0.5px solid var(--border-md); background: none; cursor: pointer; color: var(--text-secondary); font-family: inherit; transition: all 0.12s; }
+  .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  /* Entry cards */
+  .entries { display: flex; flex-direction: column; gap: 10px; }
+  .entry-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; transition: border-color 0.15s; }
+  .entry-card:hover { border-color: var(--border-md); }
+  .entry-card.flagged { border-left: 3px solid #EF9F27; }
+  .entry-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .entry-title { font-size: 15px; font-weight: 500; color: var(--text); }
+  .entry-cat { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+  .entry-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .entry-date { font-size: 12px; color: var(--text-tertiary); }
+  .diff { font-size: 11px; padding: 2px 8px; border-radius: 99px; }
+  .diff-Easy { background: var(--green-bg); color: var(--green-text); }
+  .diff-Medium { background: var(--amber-bg); color: var(--amber-text); }
+  .diff-Hard { background: var(--red-bg); color: var(--red-text); }
+  .entry-notes { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.6; white-space: pre-wrap; }
+  .entry-foot { display: flex; align-items: center; justify-content: space-between; }
+  .tags-row { display: flex; flex-wrap: wrap; gap: 5px; }
+  .entry-tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--bg-secondary); color: var(--text-secondary); }
+  .actions { display: flex; gap: 4px; }
+  .icon-btn { border: none; background: none; cursor: pointer; color: var(--text-tertiary); padding: 5px; border-radius: 6px; font-size: 17px; transition: color 0.12s; }
+  .icon-btn:hover { color: var(--text); }
+  .icon-btn.starred { color: #BA7517; }
+
+  /* Video grid */
+  .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .vid-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
+  .vid-card:hover { border-color: var(--border-md); }
+  .vid-thumb { aspect-ratio: 16/9; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; position: relative; }
+  .vid-thumb i { font-size: 30px; color: var(--text-tertiary); }
+  .vid-play { position: absolute; inset: 0; background: rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; }
+  .vid-card:hover .vid-play { opacity: 1; }
+  .vid-play i { font-size: 28px; color: #fff; }
+  .vid-info { padding: 10px 12px; }
+  .vid-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; line-height: 1.4; }
+  .vid-meta { font-size: 11px; color: var(--text-tertiary); }
+  .vid-watched { color: var(--green-text); }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 4rem 1rem; color: var(--text-secondary); }
+  .empty i { font-size: 40px; display: block; margin-bottom: 14px; color: var(--text-tertiary); }
+  .empty p { font-size: 14px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 2rem; right: 2rem; background: var(--text); color: var(--bg); font-size: 13px; padding: 10px 18px; border-radius: var(--radius-md); opacity: 0; transform: translateY(8px); transition: all 0.2s; pointer-events: none; z-index: 999; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .main { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a class="logo" href="#"><i class="ti ti-code"></i> DSA &amp; System Design Journal</a>
+  <span class="header-meta" id="header-date"></span>
+</header>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Overview</div>
+      <button class="nav-item active" onclick="goto('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Practice</div>
+      <button class="nav-item" onclick="goto('log')"><i class="ti ti-plus"></i> Log Entry</button>
+      <button class="nav-item" onclick="goto('entries')"><i class="ti ti-list"></i> All Entries <span class="nav-badge" id="badge-entries">0</span></button>
+      <button class="nav-item" onclick="goto('revision')"><i class="ti ti-star"></i> Revision <span class="nav-badge" id="badge-revision">0</span></button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Resources</div>
+      <button class="nav-item" onclick="goto('videos')"><i class="ti ti-player-play"></i> Videos <span class="nav-badge" id="badge-videos">0</span></button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Data</div>
+      <button class="nav-item" onclick="exportData()"><i class="ti ti-download"></i> Export JSON</button>
+      <button class="nav-item" onclick="importClick()"><i class="ti ti-upload"></i> Import JSON</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- Dashboard -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Your learning at a glance</div>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="heatmap-card">
+        <div class="card-title">Activity — last 70 days <span class="streak-pill" id="streak-badge">🔥 0 day streak</span></div>
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+      </div>
+      <div class="section-label">Recent entries</div>
+      <div id="recent-entries" class="entries"></div>
+    </div>
+
+    <!-- Log Entry -->
+    <div id="page-log" class="page">
+      <div class="page-header">
+        <div class="page-title">Log Entry</div>
+        <div class="page-sub">Record today's problem or topic</div>
+      </div>
+      <div class="form-card">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Problem / topic title *</label>
+            <input type="text" id="f-title" placeholder="e.g. LRU Cache, Consistent Hashing, Rate Limiter Design" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="f-cat">
+              <option>DSA</option>
+              <option>System Design (LLD)</option>
+              <option>System Design (HLD)</option>
+              <option>Behavioral</option>
+              <option>Concept / Theory</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Difficulty</label>
+            <select id="f-diff">
+              <option>Easy</option>
+              <option selected>Medium</option>
+              <option>Hard</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Notes / approach / key insight</label>
+            <textarea id="f-notes" placeholder="Your approach, patterns used, edge cases, gotchas, what to remember next time..."></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Reference link (LeetCode / article / repo)</label>
+            <input type="url" id="f-link" placeholder="https://leetcode.com/problems/..." />
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Tags</label>
+            <div class="tags-box" id="tags-box"></div>
+            <div class="tag-presets" id="tag-presets"></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" onclick="clearForm()">Clear</button>
+          <button class="btn btn-primary" onclick="saveEntry()"><i class="ti ti-device-floppy"></i> Save entry</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Entries -->
+    <div id="page-entries" class="page">
+      <div class="page-header">
+        <div class="page-title">All Entries</div>
+        <div class="page-sub">Everything you've logged</div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" id="search-q" placeholder="Search title, notes, tags..." oninput="renderEntries()" />
+        </div>
+        <button class="chip active" onclick="setFilter('All',this)">All</button>
+        <button class="chip" onclick="setFilter('DSA',this)">DSA</button>
+        <button class="chip" onclick="setFilter('System Design (LLD)',this)">LLD</button>
+        <button class="chip" onclick="setFilter('System Design (HLD)',this)">HLD</button>
+        <button class="chip" onclick="setFilter('Behavioral',this)">Behavioral</button>
+        <button class="chip" onclick="setFilter('Concept / Theory',this)">Theory</button>
+      </div>
+      <div id="entries-list" class="entries"></div>
+    </div>
+
+    <!-- Videos -->
+    <div id="page-videos" class="page">
+      <div class="page-header">
+        <div class="page-title">Video Resources</div>
+        <div class="page-sub">Save reference videos and links</div>
+      </div>
+      <div class="form-card" style="margin-bottom:1.5rem">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Video / resource title *</label>
+            <input type="text" id="v-title" placeholder="e.g. System Design Interview – Gaurav Sen: Design Twitter" />
+          </div>
+          <div class="form-group full">
+            <label class="form-label">URL *</label>
+            <input type="url" id="v-url" placeholder="https://youtube.com/watch?v=..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Topic</label>
+            <input type="text" id="v-topic" placeholder="e.g. Kafka, Trie, SOLID, Sharding" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="v-status"><option>To watch</option><option>Watching</option><option>Watched</option></select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveVideo()"><i class="ti ti-plus"></i> Add resource</button>
+        </div>
+      </div>
+      <div id="videos-grid" class="video-grid"></div>
+    </div>
+
+    <!-- Revision -->
+    <div id="page-revision" class="page">
+      <div class="page-header">
+        <div class="page-title">Revision Queue</div>
+        <div class="page-sub">Starred entries — revisit these before your next interview round</div>
+      </div>
+      <div id="revision-list" class="entries"></div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TAGS = ['Array','HashMap','Tree','Graph','DP','BFS','DFS','Sliding Window','Two Pointers','Binary Search','Heap','Stack','Queue','Trie','Linked List','Recursion','Backtracking','Greedy','Sorting','Kafka','Redis','SQL','NoSQL','Sharding','Load Balancer','CDN','Microservices','OOPS','Design Patterns','Caching','Consistency','CAP Theorem','Rate Limiting'];
+
+let entries = [], videos = [], activeTags = [], activeFilter = 'All';
+
+function load() {
+  try { entries = JSON.parse(localStorage.getItem('dsaj_entries') || '[]'); } catch(e) { entries = []; }
+  try { videos = JSON.parse(localStorage.getItem('dsaj_videos') || '[]'); } catch(e) { videos = []; }
+}
+
+function persist() {
+  localStorage.setItem('dsaj_entries', JSON.stringify(entries));
+  localStorage.setItem('dsaj_videos', JSON.stringify(videos));
+  updateBadges();
+}
+
+function updateBadges() {
+  document.getElementById('badge-entries').textContent = entries.length;
+  document.getElementById('badge-revision').textContent = entries.filter(e => e.flagged).length;
+  document.getElementById('badge-videos').textContent = videos.length;
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function goto(page) {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelector(`[onclick="goto('${page}')"]`).classList.add('active');
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'entries') renderEntries();
+  if (page === 'revision') renderRevision();
+  if (page === 'videos') renderVideos();
+}
+
+/* ── Tag UI ── */
+function buildTagUI() {
+  renderTagBox();
+  document.getElementById('tag-presets').innerHTML = TAGS.map(t =>
+    `<button class="preset-btn" onclick="addTag('${t}')">${t}</button>`
+  ).join('');
+}
+
+function renderTagBox() {
+  document.getElementById('tags-box').innerHTML = activeTags.map(t =>
+    `<span class="tag-chip">${t}<button onclick="removeTag('${t}')" aria-label="remove ${t}">×</button></span>`
+  ).join('');
+}
+
+function addTag(t) { if (!activeTags.includes(t)) { activeTags.push(t); renderTagBox(); } }
+function removeTag(t) { activeTags = activeTags.filter(x => x !== t); renderTagBox(); }
+
+/* ── Entry CRUD ── */
+function saveEntry() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { toast('Please enter a title'); return; }
+  entries.unshift({
+    id: Date.now(),
+    title,
+    category: document.getElementById('f-cat').value,
+    difficulty: document.getElementById('f-diff').value,
+    notes: document.getElementById('f-notes').value.trim(),
+    link: document.getElementById('f-link').value.trim(),
+    tags: [...activeTags],
+    date: new Date().toISOString(),
+    flagged: false
+  });
+  persist();
+  clearForm();
+  toast('Entry saved ✓');
+  goto('entries');
+}
+
+function clearForm() {
+  ['f-title','f-notes','f-link'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-cat').value = 'DSA';
+  document.getElementById('f-diff').value = 'Medium';
+  activeTags = []; renderTagBox();
+}
+
+function toggleFlag(id) {
+  const e = entries.find(x => x.id === id);
+  if (e) { e.flagged = !e.flagged; persist(); renderEntries(); renderRevision(); renderDashboard(); }
+}
+
+function deleteEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  entries = entries.filter(x => x.id !== id);
+  persist(); renderEntries(); renderRevision(); renderDashboard();
+  toast('Entry deleted');
+}
+
+/* ── Video CRUD ── */
+function saveVideo() {
+  const title = document.getElementById('v-title').value.trim();
+  const url = document.getElementById('v-url').value.trim();
+  if (!title || !url) { toast('Title and URL are required'); return; }
+  videos.unshift({ id: Date.now(), title, url, topic: document.getElementById('v-topic').value.trim(), status: document.getElementById('v-status').value });
+  persist(); renderVideos();
+  ['v-title','v-url','v-topic'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('v-status').value = 'To watch';
+  toast('Video saved ✓');
+}
+
+function deleteVideo(id) {
+  if (!confirm('Remove this video?')) return;
+  videos = videos.filter(x => x.id !== id);
+  persist(); renderVideos(); toast('Removed');
+}
+
+/* ── Filters ── */
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('#page-entries .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderEntries();
+}
+
+function getFiltered() {
+  const q = (document.getElementById('search-q').value || '').toLowerCase();
+  return entries.filter(e => {
+    const matchCat = activeFilter === 'All' || e.category === activeFilter;
+    const matchQ = !q || e.title.toLowerCase().includes(q) || (e.notes || '').toLowerCase().includes(q) || (e.tags || []).some(t => t.toLowerCase().includes(q));
+    return matchCat && matchQ;
+  });
+}
+
+/* ── Render helpers ── */
+function diffBadge(d) {
+  return `<span class="diff diff-${d}">${d}</span>`;
+}
+
+function entryHTML(e, compact) {
+  const d = new Date(e.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const notes = e.notes ? (compact ? e.notes.substring(0, 220) + (e.notes.length > 220 ? '…' : '') : e.notes) : '';
+  return `<div class="entry-card ${e.flagged ? 'flagged' : ''}">
+    <div class="entry-head">
+      <div>
+        <div class="entry-title">${esc(e.title)}</div>
+        <div class="entry-cat">${e.category}</div>
+      </div>
+      <div class="entry-right">
+        ${diffBadge(e.difficulty)}
+        <span class="entry-date">${d}</span>
+      </div>
+    </div>
+    ${notes ? `<div class="entry-notes">${esc(notes)}</div>` : ''}
+    <div class="entry-foot">
+      <div class="tags-row">${(e.tags || []).map(t => `<span class="entry-tag">${t}</span>`).join('')}</div>
+      <div class="actions">
+        ${e.link ? `<a href="${esc(e.link)}" target="_blank" rel="noopener" class="icon-btn" title="Open link"><i class="ti ti-external-link"></i></a>` : ''}
+        <button class="icon-btn ${e.flagged ? 'starred' : ''}" onclick="toggleFlag(${e.id})" title="${e.flagged ? 'Remove from revision' : 'Add to revision'}"><i class="ti ti-star"></i></button>
+        <button class="icon-btn" onclick="deleteEntry(${e.id})" title="Delete"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderEntries() {
+  const list = getFiltered();
+  const el = document.getElementById('entries-list');
+  el.innerHTML = list.length
+    ? list.map(e => entryHTML(e, true)).join('')
+    : `<div class="empty"><i class="ti ti-notes"></i><p>No entries yet — start logging your daily practice!</p></div>`;
+}
+
+function renderRevision() {
+  const list = entries.filter(e => e.flagged);
+  const el = document.getElementById('revision-list');
+  el.innerHTML = list.length
+    ? list.map(e => entryHTML(e, false)).join('')
+    : `<div class="empty"><i class="ti ti-star"></i><p>No entries starred yet. Click the ★ on any entry to add it here.</p></div>`;
+}
+
+function renderVideos() {
+  const el = document.getElementById('videos-grid');
+  if (!videos.length) { el.innerHTML = `<div class="empty" style="grid-column:1/-1"><i class="ti ti-player-play"></i><p>No videos saved yet.</p></div>`; return; }
+  el.innerHTML = videos.map(v => `
+    <div class="vid-card" onclick="window.open('${esc(v.url)}','_blank','noopener')">
+      <div class="vid-thumb">
+        <i class="ti ti-brand-youtube"></i>
+        <div class="vid-play"><i class="ti ti-player-play-filled"></i></div>
+      </div>
+      <div class="vid-info">
+        <div class="vid-title">${esc(v.title)}</div>
+        <div class="vid-meta">${v.topic ? esc(v.topic) + ' · ' : ''}<span class="${v.status === 'Watched' ? 'vid-watched' : ''}">${v.status}</span></div>
+      </div>
+    </div>
+    <button class="icon-btn" style="margin:-8px 0 8px auto;display:block" onclick="event.stopPropagation();deleteVideo(${v.id})" title="Remove"><i class="ti ti-trash"></i></button>
+  `).join('');
+}
+
+function renderDashboard() {
+  const total = entries.length;
+  const dsa = entries.filter(e => e.category === 'DSA').length;
+  const sd = entries.filter(e => e.category.includes('System')).length;
+  const flagged = entries.filter(e => e.flagged).length;
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total logged</div><div class="stat-value">${total}</div><div class="stat-sub">all categories</div></div>
+    <div class="stat-card"><div class="stat-label">DSA problems</div><div class="stat-value">${dsa}</div><div class="stat-sub">data structures & algos</div></div>
+    <div class="stat-card"><div class="stat-label">System design</div><div class="stat-value">${sd}</div><div class="stat-sub">LLD + HLD combined</div></div>
+    <div class="stat-card"><div class="stat-label">For revision</div><div class="stat-value">${flagged}</div><div class="stat-sub">starred entries</div></div>`;
+
+  // Streak
+  const dateSet = new Set(entries.map(e => e.date.split('T')[0]));
+  const today = new Date(); let streak = 0;
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    if (dateSet.has(d.toISOString().split('T')[0])) streak++;
+    else if (i > 0) break;
+  }
+  document.getElementById('streak-badge').textContent = `🔥 ${streak} day streak`;
+
+  // Heatmap
+  let cells = '';
+  for (let i = 69; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    const cnt = entries.filter(e => e.date.startsWith(ds)).length;
+    const c = cnt === 0 ? '' : cnt === 1 ? 'c1' : cnt === 2 ? 'c2' : cnt <= 4 ? 'c3' : 'c4';
+    cells += `<div class="hm-cell ${c}" title="${ds}: ${cnt} entries"></div>`;
+  }
+  document.getElementById('heatmap-grid').innerHTML = cells;
+
+  // Recent
+  const recent = entries.slice(0, 4);
+  document.getElementById('recent-entries').innerHTML = recent.length
+    ? recent.map(e => entryHTML(e, true)).join('')
+    : `<div class="empty"><i class="ti ti-plus"></i><p>Log your first entry to see it here.</p></div>`;
+}
+
+/* ── Export / Import ── */
+function exportData() {
+  const blob = new Blob([JSON.stringify({ entries, videos }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `dsa-journal-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+function importClick() { document.getElementById('import-file').click(); }
+
+function importData(ev) {
+  const file = ev.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.entries) entries = data.entries;
+      if (data.videos) videos = data.videos;
+      persist(); renderDashboard(); renderEntries(); renderVideos(); renderRevision();
+      toast('Data imported ✓');
+    } catch(err) { toast('Invalid JSON file'); }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+/* ── Init ── */
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+load();
+buildTagUI();
+renderDashboard();
+updateBadges();
+</script>
+</body>
+</html>
