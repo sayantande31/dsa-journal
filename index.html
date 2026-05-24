@@ -496,12 +496,14 @@ function renderCurrentPage() {
 }
 
 /* ── Init ── */
+// v3.1 [FIXED: 2025-prompt-3]
+// REMOVED: Pages.LogForm.render() at boot — it caused `wired=true` to be set
+// before the user ever navigated to Log Problem, so the form never worked.
+// The router now calls LogForm.render() correctly when user clicks "Log Problem".
 (async () => {
   await Store.init();
-  Router.init();
+  Router.init();        // navigates to dashboard, wires all nav-items
   Router.refreshBadges();
-  // init log form on page load so editor is ready when user navigates to it
-  Pages.LogForm.render();
 })();
 </script>
 </body>
