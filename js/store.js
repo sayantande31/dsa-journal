@@ -1,20 +1,25 @@
 /* ═══════════════════════════════════════════
-   store.js — Single source of truth v2
-   Backward-compatible: all new keys added to state
+   store.js — v4.0  [2025-prompt-4]
+   Changes:
+   - Added `resources` key (replaces videos for full resource management)
+   - Added `revisionLog` key (tracks last-revised timestamps per problem)
+   - All keys backward-compatible (old `videos` still loads)
 ═══════════════════════════════════════════ */
 window.Store = (() => {
   const GIST_FILE = 'dsa-prep-hub-data.json';
   const LS = { TOKEN:'dsahub_gist_token', GIST:'dsahub_gist_id', DATA:'dsahub_data' };
 
   let state = {
-    problems:   [],
-    todos:      [],
-    videos:     [],
-    resumes:    [],
-    interviews: [],
-    java:       [],
-    knowledge:  [],   // NEW: dynamic topic/subtopic knowledge base
-    jobs:       [],   // NEW: job tracker
+    problems:    [],
+    todos:       [],
+    videos:      [],   // kept for backward compat; new items go into resources
+    resources:   [],   // NEW: rich resource objects (pdf, yt, link, any media)
+    resumes:     [],
+    interviews:  [],
+    java:        [],   // kept for backward compat (not shown in UI anymore)
+    knowledge:   [],
+    jobs:        [],
+    revisionLog: {},   // NEW: { [problemId]: { lastRevised: ISO, notes: string } }
   };
 
   let gistToken = localStorage.getItem(LS.TOKEN) || '';
@@ -35,8 +40,18 @@ window.Store = (() => {
       const raw = localStorage.getItem(LS.DATA);
       if (raw) {
         const p = JSON.parse(raw);
-        // merge: new keys get defaults, existing keys from storage win
         state = { ...state, ...p };
+        // Migrate old videos into resources if resources is empty
+        if ((!state.resources || !state.resources.length) && state.videos?.length) {
+          state.resources = state.videos.map(v => ({
+            ...v,
+            type: 'link',
+            rating: 0,
+            tags: v.topic ? [v.topic] : [],
+            topic: v.topic || '',
+          }));
+        }
+        if (!state.revisionLog) state.revisionLog = {};
       }
     } catch(e) { console.warn('Local load failed', e); }
   }
@@ -53,7 +68,13 @@ window.Store = (() => {
       const raw  = data.files?.[GIST_FILE]?.content;
       if (raw) {
         const p = JSON.parse(raw);
-        state = { problems:[],todos:[],videos:[],resumes:[],interviews:[],java:[],knowledge:[],jobs:[], ...p };
+        state = {
+          problems:[], todos:[], videos:[], resources:[], resumes:[],
+          interviews:[], java:[], knowledge:[], jobs:[], revisionLog:{},
+          ...p
+        };
+        if (!state.resources) state.resources = [];
+        if (!state.revisionLog) state.revisionLog = {};
         localSave();
       }
       setStatus('ok', 'synced ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
@@ -94,6 +115,16 @@ window.Store = (() => {
     syncTimer = setTimeout(() => gistPush(), 1400);
   }
 
+  // revision log helpers
+  function logRevision(problemId, notes='') {
+    if (!state.revisionLog) state.revisionLog = {};
+    state.revisionLog[problemId] = { lastRevised: new Date().toISOString(), notes };
+    save();
+  }
+  function getRevisionLog(problemId) {
+    return state.revisionLog?.[problemId] || null;
+  }
+
   async function manualSync() { if (!gistToken) return false; return gistFetch(); }
   function getConfig() { return { token:gistToken, gistId }; }
   function setConfig(token, id) {
@@ -101,16 +132,18 @@ window.Store = (() => {
     localStorage.setItem(LS.TOKEN, gistToken); localStorage.setItem(LS.GIST, gistId);
   }
 
-  function get(key)              { return state[key] || []; }
-  function add(key, item)        { state[key] = [item, ...(state[key]||[])]; save(); }
-  function update(key, id, patch){ state[key] = (state[key]||[]).map(x => x.id===id ? {...x,...patch} : x); save(); }
-  function remove(key, id)       { state[key] = (state[key]||[]).filter(x => x.id!==id); save(); }
-  function upsert(key, item)     {
+  function get(key)               { return state[key] || []; }
+  function getRaw(key)            { return state[key]; }
+  function add(key, item)         { state[key] = [item, ...(state[key]||[])]; save(); }
+  function update(key, id, patch) { state[key] = (state[key]||[]).map(x => x.id===id ? {...x,...patch} : x); save(); }
+  function remove(key, id)        { state[key] = (state[key]||[]).filter(x => x.id!==id); save(); }
+  function upsert(key, item) {
     const idx = (state[key]||[]).findIndex(x => x.id===item.id);
     if (idx>=0) state[key][idx] = {...state[key][idx],...item};
     else state[key] = [item,...(state[key]||[])];
     save();
   }
+  function setList(key, arr) { state[key] = arr; save(); } // for reordering
 
   function exportJSON() {
     const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
@@ -126,7 +159,11 @@ window.Store = (() => {
       reader.onload = async e => {
         try {
           const p = JSON.parse(e.target.result);
-          state = { problems:[],todos:[],videos:[],resumes:[],interviews:[],java:[],knowledge:[],jobs:[], ...p };
+          state = {
+            problems:[], todos:[], videos:[], resources:[], resumes:[],
+            interviews:[], java:[], knowledge:[], jobs:[], revisionLog:{},
+            ...p
+          };
           await gistPush(); res(true);
         } catch(err) { rej(err); }
       };
@@ -141,7 +178,8 @@ window.Store = (() => {
   }
 
   return {
-    get, add, update, remove, upsert, save,
+    get, getRaw, add, update, remove, upsert, setList, save,
+    logRevision, getRevisionLog,
     manualSync, exportJSON, importJSON,
     getConfig, setConfig, setSyncCb,
     gistFetch, gistPush, init,
