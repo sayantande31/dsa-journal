@@ -240,6 +240,32 @@ select option { background: var(--bg3); color: var(--txt); }
 input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.4); cursor: pointer; }
 input::placeholder, textarea::placeholder { color: var(--txt4); }
 
+/* File upload styling */
+#kn-sub-imgs{
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--txt2);
+  width: 100%;
+}
+
+#kn-sub-imgs::file-selector-button{
+  background: var(--accent);
+  color: #0c0c0a;
+  border: none;
+  padding: 7px 14px;
+  border-radius: var(--r);
+  margin-right: 10px;
+  cursor: pointer;
+  font-family: var(--font-head);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all .15s;
+}
+
+#kn-sub-imgs::file-selector-button:hover{
+  background: var(--accent2);
+}
+
 /* ─── CODE EDITOR ─── */
 .code-editor-wrap { border: 1px solid var(--line2); border-radius: var(--r); overflow: hidden; }
 .code-editor-tabs { display: flex; align-items: center; background: var(--bg3); border-bottom: 1px solid var(--line); padding: 0 10px; gap: 2px; min-height: 36px; }
