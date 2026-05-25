@@ -21,8 +21,10 @@
       <span id="sync-label">not connected</span>
     </div>
     <button class="btn-icon" onclick="manualSyncNow()" title="Sync now"><i class="ti ti-refresh"></i></button>
-    <button class="btn-icon" onclick="Store.exportJSON()" title="Export JSON"><i class="ti ti-download"></i></button>
+    <button class="btn-icon" onclick="Store.exportJSON()" title="Export JSON backup"><i class="ti ti-download"></i></button>
     <button class="btn-icon" onclick="document.getElementById('import-input').click()" title="Import JSON"><i class="ti ti-upload"></i></button>
+    <!-- Mobile menu toggle -->
+    <button class="btn-icon" id="mob-menu-btn" title="Menu" style="display:none"><i class="ti ti-menu-2"></i></button>
     <input type="file" id="import-input" accept=".json" style="display:none"/>
   </div>
 </header>
@@ -32,15 +34,15 @@
   <div class="modal">
     <div class="modal-title">GitHub Gist Sync</div>
     <div class="modal-sub">
-      Your data syncs to a <strong style="color:var(--txt2)">private GitHub Gist</strong> — accessible across all devices.<br><br>
+      Your data syncs to a <strong style="color:var(--txt2)">private GitHub Gist</strong> — works on all devices automatically.<br><br>
       <strong style="color:var(--txt2)">One-time setup:</strong><br>
       1. Go to <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a><br>
-      2. Name: <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">DSA Prep Hub</code> · Expiry: <strong>No expiration</strong><br>
+      2. Name: <code style="background:var(--bg3);padding:1px 5px;border-radius:3px">DSA Prep Hub</code> &nbsp;·&nbsp; Expiry: <strong>No expiration</strong><br>
       3. Check only <strong style="color:var(--accent)">✓ gist</strong> scope → Generate → paste below<br>
       4. Leave Gist ID blank on first save — it's auto-created.
     </div>
     <div class="modal-field"><div class="modal-label">Personal Access Token</div><input type="text" id="gist-token-inp" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/></div>
-    <div class="modal-field"><div class="modal-label">Gist ID <span style="color:var(--txt3)">(auto-filled)</span></div><input type="text" id="gist-id-inp" placeholder="auto-filled after first save"/></div>
+    <div class="modal-field"><div class="modal-label">Gist ID <span style="color:var(--txt3)">(auto-filled after first save)</span></div><input type="text" id="gist-id-inp" placeholder="auto-filled"/></div>
     <div class="modal-actions">
       <button class="btn btn-sm" onclick="closeGistModal()">Cancel</button>
       <button class="btn btn-primary btn-sm" onclick="saveGistConfig()"><i class="ti ti-check"></i> Save &amp; Connect</button>
@@ -48,11 +50,11 @@
   </div>
 </div>
 
-<!-- ══ SOLVE MODAL (Todo → Problem) ══ -->
+<!-- ══ SOLVE TODO MODAL ══ -->
 <div class="modal-bg hidden" id="todo-solve-modal">
-  <div class="modal" style="max-width:640px;max-height:90vh;overflow-y:auto">
+  <div class="modal" style="max-width:640px">
     <div class="modal-title">Mark as Solved</div>
-    <div class="modal-sub">Fill in your solution details before it gets added to Problems Solved.</div>
+    <div class="modal-sub">Fill in your solution before it gets added to Problems Solved.</div>
     <div class="form-grid">
       <div class="fg full"><div class="modal-label">Title</div><input type="text" id="ts-title" placeholder="Problem title"/></div>
       <div class="fg"><div class="modal-label">Category</div>
@@ -65,7 +67,6 @@
       <div class="fg full"><div class="modal-label">Problem Link</div><input type="url" id="ts-link" placeholder="https://leetcode.com/problems/…"/></div>
       <div class="fg full"><div class="modal-label">Notes / approach</div><textarea id="ts-notes" style="min-height:70px" placeholder="Key insight, approach used…"></textarea></div>
     </div>
-    <!-- code tabs in modal -->
     <div style="margin-bottom:14px">
       <div class="modal-label" style="margin-bottom:6px">Code</div>
       <div class="code-editor-wrap">
@@ -73,8 +74,8 @@
           <button class="ced-tab active" id="ts-tab-brute" onclick="tsSwitchTab('brute',this)">Brute Force</button>
           <button class="ced-tab" id="ts-tab-optimal" onclick="tsSwitchTab('optimal',this)">Optimal</button>
         </div>
-        <div class="code-pane active" id="ts-pane-brute"><textarea id="ts-brute" placeholder="// Brute force code&#10;// Time: O(?), Space: O(?)"></textarea></div>
-        <div class="code-pane" id="ts-pane-optimal" style="display:none"><textarea id="ts-optimal" placeholder="// Optimal code&#10;// Time: O(?), Space: O(?)"></textarea></div>
+        <div class="code-pane active" id="ts-pane-brute"><textarea id="ts-brute" placeholder="// Brute force code"></textarea></div>
+        <div class="code-pane" id="ts-pane-optimal" style="display:none"><textarea id="ts-optimal" placeholder="// Optimal code"></textarea></div>
       </div>
     </div>
     <div class="form-grid">
@@ -88,11 +89,20 @@
   </div>
 </div>
 
+<!-- ══ DOCUMENT VIEWER OVERLAY ══ -->
+<div class="doc-viewer-overlay hidden" id="doc-viewer-overlay">
+  <div class="doc-viewer-topbar">
+    <span class="doc-viewer-title" id="doc-viewer-title">Document</span>
+    <button class="btn btn-sm" onclick="closeDocViewer()"><i class="ti ti-x"></i> Close</button>
+  </div>
+  <iframe class="doc-viewer-frame" id="doc-viewer-frame" title="Document viewer"></iframe>
+</div>
+
 <!-- ══ SHELL ══ -->
 <div class="shell">
 
 <!-- SIDEBAR -->
-<nav class="sidebar">
+<nav class="sidebar" id="sidebar">
   <div class="sidebar-section">
     <span class="sidebar-group-label">Overview</span>
     <button class="nav-item" data-page="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
@@ -102,20 +112,23 @@
     <span class="sidebar-group-label">Practice</span>
     <button class="nav-item" data-page="todo"><i class="ti ti-list-check"></i> To-Do <span class="nav-badge" id="nb-todo">0</span></button>
     <button class="nav-item" data-page="log"><i class="ti ti-plus"></i> Log Problem</button>
-    <button class="nav-item" data-page="problems"><i class="ti ti-terminal-2"></i> Problems <span class="nav-badge" id="nb-problems">0</span></button>
+    <button class="nav-item" data-page="problems"><i class="ti ti-terminal-2"></i> Problems Solved <span class="nav-badge" id="nb-problems">0</span></button>
     <button class="nav-item" data-page="revision"><i class="ti ti-star"></i> Revision <span class="nav-badge" id="nb-revision">0</span></button>
   </div>
   <div class="sidebar-section">
     <span class="sidebar-group-label">Knowledge</span>
-    <button class="nav-item" data-page="java"><i class="ti ti-coffee"></i> Java Q&amp;A <span class="nav-badge" id="nb-java">0</span></button>
     <button class="nav-item" data-page="knowledge"><i class="ti ti-book"></i> Knowledge Base <span class="nav-badge" id="nb-knowledge">0</span></button>
-    <button class="nav-item" data-page="videos"><i class="ti ti-player-play"></i> Resources <span class="nav-badge" id="nb-videos">0</span></button>
+    <button class="nav-item" data-page="resources"><i class="ti ti-books"></i> Resources <span class="nav-badge" id="nb-resources">0</span></button>
   </div>
   <div class="sidebar-section">
     <span class="sidebar-group-label">Career</span>
     <button class="nav-item" data-page="interviews"><i class="ti ti-building-skyscraper"></i> Interviews <span class="nav-badge" id="nb-interviews">0</span></button>
     <button class="nav-item" data-page="jobs"><i class="ti ti-briefcase"></i> Job Tracker <span class="nav-badge" id="nb-jobs">0</span></button>
     <button class="nav-item" data-page="resume"><i class="ti ti-file-description"></i> Resume / CV</button>
+  </div>
+  <div class="sidebar-section">
+    <span class="sidebar-group-label">Planner</span>
+    <button class="nav-item" data-page="planner"><i class="ti ti-calendar-event"></i> Daily Planner <span class="nav-badge" id="nb-planner">0</span></button>
   </div>
   <div class="sidebar-divider"></div>
   <div class="sidebar-section">
@@ -131,7 +144,7 @@
 <!-- ══ DASHBOARD ══ -->
 <div id="page-dashboard" class="page">
   <div class="page-header">
-    <div class="page-title-block"><div class="page-title">Dashboard</div><div class="page-sub" id="db-date-sub"></div></div>
+    <div class="page-title-block"><div class="page-title">Dashboard</div><div class="page-sub" id="topbar-date2"></div></div>
     <button class="btn btn-primary btn-sm" onclick="Router.goto('log')"><i class="ti ti-plus"></i> Log Problem</button>
   </div>
   <div class="stats-grid" id="db-stats"></div>
@@ -144,23 +157,23 @@
   <div id="db-recent"></div>
 </div>
 
-<!-- ══ LOG PROBLEM (separate page) ══ -->
+<!-- ══ LOG PROBLEM ══ -->
 <div id="page-log" class="page">
   <div class="page-header">
-    <div class="page-title-block"><div class="page-title" id="form-section-title">Log Problem</div><div class="page-sub">Document a new DSA / System Design solution</div></div>
-    <button class="btn btn-sm" onclick="Pages.LogForm.clear();Router.goto('problems')"><i class="ti ti-arrow-left"></i> Back to Problems</button>
+    <div class="page-title-block"><div class="page-title" id="form-section-title">Log Problem</div><div class="page-sub">Document a new solution</div></div>
+    <button class="btn btn-sm" onclick="Pages.LogForm.clear();Router.goto('problems')"><i class="ti ti-arrow-left"></i> Back</button>
   </div>
   <div class="form-card">
     <div class="form-grid">
-      <div class="fg full"><div class="flabel">Problem title *</div><input type="text" id="f-title" placeholder="e.g. LRU Cache, Merge K Sorted Lists, Design Rate Limiter"/></div>
+      <div class="fg full"><div class="flabel">Problem title *</div><input type="text" id="f-title" placeholder="e.g. LRU Cache, Consistent Hashing, Design Rate Limiter"/></div>
       <div class="fg"><div class="flabel">Category</div>
         <select id="f-cat"><option>DSA</option><option>System Design (LLD)</option><option>System Design (HLD)</option><option>Behavioral</option><option>Concept / Theory</option></select></div>
       <div class="fg"><div class="flabel">Difficulty</div><select id="f-diff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
       <div class="fg"><div class="flabel">Date solved</div><input type="date" id="f-date"/></div>
       <div class="fg"><div class="flabel">Status</div>
         <select id="f-status"><option>Solved</option><option>Partially Solved</option><option>Looked up solution</option><option>To Revisit</option></select></div>
-      <div class="fg full"><div class="flabel">Problem link (LeetCode / GFG / HackerRank)</div><input type="url" id="f-link" placeholder="https://leetcode.com/problems/lru-cache/"/></div>
-      <div class="fg full"><div class="flabel">YouTube / reference links <span style="color:var(--txt4)">(one per line)</span></div><textarea id="f-yt-links" style="min-height:60px" placeholder="https://youtube.com/watch?v=…&#10;https://youtube.com/watch?v=…"></textarea></div>
+      <div class="fg full"><div class="flabel">Problem link (LeetCode / GFG / HackerRank)</div><input type="url" id="f-link" placeholder="https://leetcode.com/problems/…"/></div>
+      <div class="fg full"><div class="flabel">YouTube / reference links <span style="color:var(--txt4)">(one per line)</span></div><textarea id="f-yt-links" style="min-height:55px" placeholder="https://youtube.com/watch?v=…"></textarea></div>
       <div class="fg full"><div class="flabel">Notes / approach / key insight</div><textarea id="f-notes" placeholder="Your thought process, patterns, gotchas…"></textarea></div>
     </div>
     <div class="fg full" style="margin-bottom:14px">
@@ -168,7 +181,7 @@
       <div id="f-code-editor"></div>
     </div>
     <div class="fg full" style="margin-bottom:14px">
-      <div class="flabel">Tags <span style="color:var(--txt4)">(click preset or type custom then press Enter)</span></div>
+      <div class="flabel">Tags <span style="color:var(--txt4)">(click preset or type custom + Enter)</span></div>
       <div class="tags-wrap"><div class="tag-box" id="f-tags"></div><div class="tag-presets" id="f-tag-presets"></div></div>
     </div>
     <div class="btn-row">
@@ -197,7 +210,7 @@
     <button class="chip" data-val="Easy">Easy</button>
     <button class="chip" data-val="Medium">Medium</button>
     <button class="chip" data-val="Hard">Hard</button>
-    <button class="btn btn-xs" id="prob-today-btn" title="Show today only"><i class="ti ti-calendar"></i> Today</button>
+    <button class="btn btn-xs" id="prob-today-btn"><i class="ti ti-calendar"></i> Today</button>
     <input type="date" id="prob-from" style="width:130px;padding:5px 8px;font-size:11px;font-family:var(--font-mono)" title="From date"/>
     <input type="date" id="prob-to" style="width:130px;padding:5px 8px;font-size:11px;font-family:var(--font-mono)" title="To date"/>
     <button class="chip" id="prob-clear-dates">Clear dates</button>
@@ -210,9 +223,9 @@
   <div class="page-header"><div class="page-title-block"><div class="page-title">Day View</div><div class="page-sub">Problems grouped by date</div></div></div>
   <div class="filter-bar">
     <div class="search-wrap"><i class="ti ti-search"></i><input type="text" id="dv-search" placeholder="Search…"/></div>
-    <select id="dv-month" style="width:auto;padding:6px 10px;font-size:12px;font-family:var(--font-mono)"></select>
-    <span style="font-size:11px;font-family:var(--font-mono);color:var(--txt3)">or exact date:</span>
-    <input type="date" id="dv-exact-date" style="width:140px;padding:5px 8px;font-size:11px;font-family:var(--font-mono)" title="Filter by exact date"/>
+    <select id="dv-month" style="padding:6px 10px;font-size:12px;font-family:var(--font-mono)"></select>
+    <span style="font-size:11px;font-family:var(--font-mono);color:var(--txt3)">or exact:</span>
+    <input type="date" id="dv-exact-date" style="width:140px;padding:5px 8px;font-size:11px;font-family:var(--font-mono)"/>
     <button class="chip" id="dv-clear-btn">Clear</button>
   </div>
   <div id="dv-list"></div>
@@ -235,7 +248,7 @@
     </div>
     <div class="fg full" style="margin-top:12px">
       <div class="flabel">Bulk — paste links or names one per line</div>
-      <textarea id="todo-bulk-input" style="min-height:80px" placeholder="https://leetcode.com/problems/two-sum/&#10;https://leetcode.com/problems/valid-parentheses/&#10;Merge Intervals&#10;…"></textarea>
+      <textarea id="todo-bulk-input" style="min-height:70px" placeholder="https://leetcode.com/problems/two-sum/&#10;https://leetcode.com/problems/valid-parentheses/&#10;Merge Intervals"></textarea>
     </div>
   </div>
   <div class="section-label">Pending</div>
@@ -246,56 +259,24 @@
 
 <!-- ══ REVISION ══ -->
 <div id="page-revision" class="page">
-  <div class="page-header"><div class="page-title-block"><div class="page-title">Revision Queue</div><div class="page-sub">Starred problems — review before interviews</div></div></div>
-  <div id="rev-list"></div>
-</div>
-
-<!-- ══ VIDEOS / RESOURCES ══ -->
-<div id="page-videos" class="page">
-  <div class="page-header"><div class="page-title-block"><div class="page-title">Resources</div><div class="page-sub">Videos, articles, playlists with multiple links per resource</div></div></div>
-  <div class="form-card" style="margin-bottom:1.5rem;max-width:700px">
-    <div class="section-label">Add Resource</div>
-    <div class="form-grid">
-      <div class="fg full"><div class="flabel">Title *</div><input type="text" id="vid-title" placeholder="e.g. Gaurav Sen — Consistent Hashing"/></div>
-      <div class="fg full"><div class="flabel">Primary URL * <span style="color:var(--txt4)">(YouTube auto-loads thumbnail)</span></div><input type="url" id="vid-url" placeholder="https://youtube.com/watch?v=…"/></div>
-      <div class="fg full"><div class="flabel">Extra YouTube / links <span style="color:var(--txt4)">(one per line)</span></div><textarea id="vid-extra-links" style="min-height:60px" placeholder="https://youtube.com/watch?v=…&#10;https://article-link.com/…"></textarea></div>
-      <div class="fg"><div class="flabel">Topic</div><input type="text" id="vid-topic" placeholder="e.g. Kafka, Trie, OOPS"/></div>
-      <div class="fg"><div class="flabel">Status</div><select id="vid-status"><option>To watch</option><option>Watching</option><option>Watched</option></select></div>
-    </div>
-    <div class="btn-row"><button class="btn btn-primary" id="vid-save-btn"><i class="ti ti-plus"></i> Add resource</button></div>
+  <div class="page-header"><div class="page-title-block"><div class="page-title">Revision</div><div class="page-sub">Queue + Tracker</div></div></div>
+  <div id="rev-tab-bar"></div>
+  <div id="rev-queue-pane">
+    <div id="rev-list"></div>
   </div>
-  <div id="vid-grid"></div>
-</div>
-
-<!-- ══ JAVA Q&A ══ -->
-<div id="page-java" class="page">
-  <div class="page-header"><div class="page-title-block"><div class="page-title">Java Q&amp;A</div><div class="page-sub">Important Java questions for revision</div></div></div>
-  <div class="form-card" style="margin-bottom:1.5rem" id="java-form-anchor">
-    <div class="section-label">Add Question</div>
-    <div class="form-grid">
-      <div class="fg full"><div class="flabel">Question *</div><input type="text" id="java-q" placeholder="e.g. Difference between HashMap and ConcurrentHashMap?"/></div>
-      <div class="fg"><div class="flabel">Category</div>
-        <select id="java-cat"><option>Core Java</option><option>Collections</option><option>Multithreading</option><option>JVM</option><option>Spring</option><option>Hibernate</option><option>Java 8+</option><option>Design Patterns</option><option>OOPS</option><option>Streams</option><option>Generics</option><option>Other</option></select></div>
-      <div class="fg"><div class="flabel">Importance</div><select id="java-diff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
-      <div class="fg full"><div class="flabel">Answer / notes</div><textarea id="java-notes" placeholder="Key points, explanation, gotchas…"></textarea></div>
-    </div>
-    <div class="fg full" style="margin-bottom:14px"><div class="flabel" style="margin-bottom:6px">Code example</div><div id="java-code-editor"></div></div>
-    <div class="fg full" style="margin-bottom:14px">
-      <div class="flabel">Tags</div>
-      <div class="tags-wrap"><div class="tag-box" id="java-tags"></div><div class="tag-presets" id="java-tag-presets"></div></div>
-    </div>
-    <div class="btn-row"><button class="btn btn-sm" id="java-clear-btn"><i class="ti ti-x"></i> Clear</button><button class="btn btn-primary" id="java-save-btn"><i class="ti ti-device-floppy"></i> Save Question</button></div>
+  <div id="rev-tracker-pane" style="display:none">
+    <div class="filter-bar" id="rev-tracker-filter-bar" style="flex-wrap:wrap"></div>
+    <div id="rev-tracker-list"></div>
   </div>
-  <div class="filter-bar"><div class="search-wrap"><i class="ti ti-search"></i><input type="text" id="java-search" placeholder="Search questions…"/></div></div>
-  <div class="java-cats" id="java-cat-filter"></div>
-  <div id="java-list"></div>
 </div>
 
 <!-- ══ KNOWLEDGE BASE ══ -->
 <div id="page-knowledge" class="page">
-  <div class="page-header"><div class="page-title-block"><div class="page-title">Knowledge Base</div><div class="page-sub">Dynamic topics · subtopics · text · links · images · code</div></div></div>
+  <div class="page-header"><div class="page-title-block"><div class="page-title">Knowledge Base</div><div class="page-sub">Dynamic topics · subtopics · text · links · images · code · drag to reorder</div></div></div>
+  <div class="filter-bar" style="margin-bottom:1rem">
+    <div class="search-wrap" style="max-width:360px"><i class="ti ti-search"></i><input type="text" id="kn-search" placeholder="Search topics and subtopics…"/></div>
+  </div>
   <div style="display:grid;grid-template-columns:220px 1fr;gap:1.25rem;min-height:500px">
-    <!-- Left: topic list -->
     <div>
       <div class="form-card" style="margin-bottom:10px;padding:10px">
         <div class="flabel" style="margin-bottom:5px">New topic</div>
@@ -304,11 +285,69 @@
           <button class="btn btn-primary btn-sm" id="kn-add-topic-btn"><i class="ti ti-plus"></i></button>
         </div>
       </div>
-      <div id="kn-topic-list" style="display:flex;flex-direction:column;gap:4px"></div>
+      <div id="kn-topic-list"></div>
     </div>
-    <!-- Right: content -->
     <div id="kn-content"></div>
   </div>
+</div>
+
+<!-- ══ RESOURCES ══ -->
+<div id="page-resources" class="page">
+  <div class="page-header"><div class="page-title-block"><div class="page-title">Resources</div><div class="page-sub">PDFs, YouTube, articles — rated, grouped, viewable in-browser</div></div></div>
+
+  <!-- Add form -->
+  <div class="form-card" style="margin-bottom:1.5rem" id="res2-form-anchor">
+    <div class="section-label" id="res2-form-title">Add Resource</div>
+    <div class="form-grid">
+      <div class="fg full"><div class="flabel">Title *</div><input type="text" id="res2-title" placeholder="e.g. Gaurav Sen — Consistent Hashing, NeetCode DP playlist…"/></div>
+      <div class="fg full"><div class="flabel">URL <span style="color:var(--txt4)">(YouTube auto-loads thumbnail)</span></div><input type="url" id="res2-url" placeholder="https://youtube.com/watch?v=… or https://article.com/…"/></div>
+      <div class="fg full">
+        <div class="flabel">Upload file <span style="color:var(--txt4)">(PDF, image — stored in your Gist, max 25MB)</span></div>
+        <label class="kn-file-upload-label">
+          <input type="file" id="res2-file" class="kn-file-input" accept=".pdf,image/*"/>
+          <span class="kn-file-upload-text" id="res2-file-label"><i class="ti ti-upload"></i> Optional: upload PDF or image…</span>
+        </label>
+      </div>
+      <div class="fg full"><div class="flabel">Extra links <span style="color:var(--txt4)">(one per line)</span></div><textarea id="res2-extra-links" style="min-height:50px" placeholder="https://github.com/…&#10;https://article2.com/…"></textarea></div>
+      <div class="fg"><div class="flabel">Type</div>
+        <select id="res2-type"><option value="link">Link / Article</option><option value="youtube">YouTube</option><option value="pdf">PDF</option><option value="article">Article</option></select></div>
+      <div class="fg"><div class="flabel">Topic / category</div><input type="text" id="res2-topic" placeholder="e.g. Kafka, Trie, OOPS, DP"/></div>
+      <div class="fg"><div class="flabel">Status</div>
+        <select id="res2-status"><option>To watch</option><option>Watching</option><option>Done</option></select></div>
+      <div class="fg"><div class="flabel">Rating</div>
+        <div style="display:flex;gap:2px;margin-top:4px">
+          <button class="res2-star-btn" data-val="1" type="button"><i class="ti ti-star" style="pointer-events:none"></i></button>
+          <button class="res2-star-btn" data-val="2" type="button"><i class="ti ti-star" style="pointer-events:none"></i></button>
+          <button class="res2-star-btn" data-val="3" type="button"><i class="ti ti-star" style="pointer-events:none"></i></button>
+          <button class="res2-star-btn" data-val="4" type="button"><i class="ti ti-star" style="pointer-events:none"></i></button>
+          <button class="res2-star-btn" data-val="5" type="button"><i class="ti ti-star" style="pointer-events:none"></i></button>
+        </div>
+        <input type="hidden" id="res2-rating-val" value="0"/>
+      </div>
+      <div class="fg full"><div class="flabel">Notes</div><textarea id="res2-notes" style="min-height:55px" placeholder="Key takeaways, why it's useful…"></textarea></div>
+      <div class="fg full"><div class="flabel">Tags <span style="color:var(--txt4)">(comma-separated)</span></div><input type="text" id="res2-tags" placeholder="DP, Graph, Kafka…"/></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-sm" id="res2-clear-btn"><i class="ti ti-x"></i> Clear</button>
+      <button class="btn btn-primary" id="res2-save-btn"><i class="ti ti-device-floppy"></i> Save Resource</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="search-wrap"><i class="ti ti-search"></i><input type="text" id="res2-search" placeholder="Search title, topic, notes, tags…"/></div>
+    <select id="res2-filter-topic" style="font-size:11px;padding:5px 8px;font-family:var(--font-mono)"></select>
+    <select id="res2-filter-type" style="font-size:11px;padding:5px 8px;font-family:var(--font-mono)">
+      <option value="All">All types</option><option value="youtube">YouTube</option><option value="pdf">PDF</option><option value="link">Link</option><option value="article">Article</option>
+    </select>
+    <select id="res2-filter-rating" style="font-size:11px;padding:5px 8px;font-family:var(--font-mono)">
+      <option value="0">Any rating</option><option value="3">3★+</option><option value="4">4★+</option><option value="5">5★ only</option>
+    </select>
+    <select id="res2-view-mode" style="font-size:11px;padding:5px 8px;font-family:var(--font-mono)">
+      <option value="grid">Grid view</option><option value="topic">Group by topic</option>
+    </select>
+  </div>
+  <div id="res2-list"></div>
 </div>
 
 <!-- ══ INTERVIEWS ══ -->
@@ -322,11 +361,14 @@
       <div class="fg"><div class="flabel">Round</div><input type="text" id="int-round" placeholder="e.g. DSA Round 1, System Design, HM"/></div>
       <div class="fg"><div class="flabel">Date</div><input type="date" id="int-date"/></div>
       <div class="fg"><div class="flabel">Outcome</div><select id="int-status"><option>Attended</option><option>Selected</option><option>Rejected</option><option>Pending</option><option>Withdrawn</option></select></div>
-      <div class="fg full"><div class="flabel">Questions asked</div><textarea id="int-questions" style="min-height:90px" placeholder="List questions — one per line…"></textarea></div>
+      <div class="fg full"><div class="flabel">Questions asked</div><textarea id="int-questions" style="min-height:80px" placeholder="List questions — one per line…"></textarea></div>
       <div class="fg full"><div class="flabel">Experience &amp; observations</div><textarea id="int-experience" placeholder="How it went, interviewer style, pace…"></textarea></div>
-      <div class="fg full"><div class="flabel">Outcome / learnings</div><textarea id="int-outcome" placeholder="What to improve, what went well…"></textarea></div>
+      <div class="fg full"><div class="flabel">Outcome / learnings</div><textarea id="int-outcome" placeholder="What to improve, follow-up actions…"></textarea></div>
     </div>
-    <div class="btn-row"><button class="btn btn-sm" id="int-clear-btn"><i class="ti ti-x"></i> Clear</button><button class="btn btn-primary" id="int-save-btn"><i class="ti ti-device-floppy"></i> Save Experience</button></div>
+    <div class="btn-row">
+      <button class="btn btn-sm" id="int-clear-btn"><i class="ti ti-x"></i> Clear</button>
+      <button class="btn btn-primary" id="int-save-btn"><i class="ti ti-device-floppy"></i> Save Experience</button>
+    </div>
   </div>
   <div class="filter-bar"><div class="search-wrap"><i class="ti ti-search"></i><input type="text" id="int-search" placeholder="Search company, role, round…"/></div></div>
   <div id="int-list"></div>
@@ -334,7 +376,7 @@
 
 <!-- ══ JOB TRACKER ══ -->
 <div id="page-jobs" class="page">
-  <div class="page-header"><div class="page-title-block"><div class="page-title">Job Tracker</div><div class="page-sub">Track applications, portal credentials, status</div></div></div>
+  <div class="page-header"><div class="page-title-block"><div class="page-title">Job Tracker</div><div class="page-sub">Track applications, portal credentials, status pipeline</div></div></div>
   <div class="form-card" style="margin-bottom:1.5rem" id="job-form-anchor">
     <div class="section-label">Add / Edit Job</div>
     <div class="form-grid">
@@ -354,9 +396,11 @@
       </div>
       <div class="fg full"><div class="flabel">Notes</div><textarea id="job-notes" placeholder="Referral info, recruiter contact, next steps…"></textarea></div>
     </div>
-    <div class="btn-row"><button class="btn btn-sm" id="job-clear-btn"><i class="ti ti-x"></i> Clear</button><button class="btn btn-primary" id="job-save-btn"><i class="ti ti-device-floppy"></i> Save Job</button></div>
+    <div class="btn-row">
+      <button class="btn btn-sm" id="job-clear-btn"><i class="ti ti-x"></i> Clear</button>
+      <button class="btn btn-primary" id="job-save-btn"><i class="ti ti-device-floppy"></i> Save Job</button>
+    </div>
   </div>
-  <!-- filters -->
   <div class="filter-bar" id="job-status-filter"></div>
   <div class="filter-bar">
     <div class="search-wrap"><i class="ti ti-search"></i><input type="text" id="job-search" placeholder="Search company, role, portal…"/></div>
@@ -370,27 +414,44 @@
 
 <!-- ══ RESUME ══ -->
 <div id="page-resume" class="page">
-  <div class="page-header"><div class="page-title-block"><div class="page-title">Resume / CV</div><div class="page-sub">Upload and download your CVs as PDF</div></div></div>
+  <div class="page-header"><div class="page-title-block"><div class="page-title">Resume / CV</div><div class="page-sub">Upload, view and download your CVs as PDF</div></div></div>
   <div class="form-card" style="margin-bottom:1.5rem;max-width:640px">
     <div class="section-label">Upload Resume</div>
     <div class="form-grid">
       <div class="fg full"><div class="flabel">Label / version *</div><input type="text" id="res-label" placeholder="e.g. BlackRock Senior 2025 — ATS clean"/></div>
       <div class="fg full"><div class="flabel">PDF file *</div>
-        <label style="cursor:pointer;display:block">
-          <div style="background:var(--bg3);border:2px dashed var(--line2);border-radius:var(--r);padding:1rem;text-align:center;font-family:var(--font-mono);font-size:12px;color:var(--txt3)" id="res-file-label">Click to select PDF…</div>
-          <input type="file" id="res-file" accept="application/pdf" style="display:none"/>
+        <label class="kn-file-upload-label">
+          <div class="kn-file-upload-text" id="res-file-label"><i class="ti ti-upload"></i> Click to select PDF…</div>
+          <input type="file" id="res-file" class="kn-file-input" accept="application/pdf"/>
         </label>
       </div>
       <div class="fg full"><div class="flabel">Note <span style="color:var(--txt4)">(optional)</span></div><input type="text" id="res-note" placeholder="e.g. 1-page ATS optimised, includes system design projects"/></div>
     </div>
-    <div style="font-size:11px;font-family:var(--font-mono);color:var(--txt4);margin-bottom:10px">⚠ PDF stored in your private Gist. Keep files under 5MB.</div>
+    <div style="font-size:11px;font-family:var(--font-mono);color:var(--txt4);margin-bottom:10px">⚠ PDF stored in your private Gist — keep under 5MB per file.</div>
     <div class="btn-row"><button class="btn btn-primary" id="res-save-btn"><i class="ti ti-upload"></i> Upload &amp; Save</button></div>
   </div>
   <div class="section-label">Your Resumes</div>
   <div id="res-grid"></div>
 </div>
 
-</main>
+<!-- ══ DAILY PLANNER ══ -->
+<div id="page-planner" class="page">
+  <div class="page-header"><div class="page-title-block"><div class="page-title">Daily Planner</div><div class="page-sub">Plan and document your day — notes + time blocks</div></div></div>
+  <!-- Date navigation -->
+  <div class="pl-date-nav">
+    <button class="btn btn-sm" id="pl-prev-btn"><i class="ti ti-chevron-left"></i></button>
+    <span class="pl-date-display" id="pl-date-display"></span>
+    <button class="btn btn-sm" id="pl-next-btn"><i class="ti ti-chevron-right"></i></button>
+    <button class="btn btn-sm btn-primary" id="pl-today-btn"><i class="ti ti-calendar"></i> Today</button>
+    <input type="date" id="pl-date-picker" style="width:140px;padding:5px 8px;font-size:11px;font-family:var(--font-mono)" title="Jump to date"/>
+  </div>
+  <!-- Week strip -->
+  <div class="pl-week-strip" id="pl-week-strip"></div>
+  <!-- Day content -->
+  <div id="pl-day-content"></div>
+</div>
+
+</main><!-- /main -->
 </div><!-- /shell -->
 
 <div class="toast" id="toast"></div>
@@ -404,19 +465,38 @@
 <script src="js/pages/todo.js"></script>
 <script src="js/pages/sections.js"></script>
 <script src="js/pages/knowledge.js"></script>
+<script src="js/pages/resources.js"></script>
 <script src="js/pages/jobs.js"></script>
+<script src="js/pages/planner.js"></script>
 
 <script>
-/* ══ App bootstrap ══════════════════════════════════════ */
-document.getElementById('topbar-date').textContent =
-  new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+/* ══ Bootstrap ══════════════════════════════════════════════ */
+const _todayStr = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const _topbarDate = document.getElementById('topbar-date');
+if (_topbarDate) _topbarDate.textContent = _todayStr;
+const _topbarDate2 = document.getElementById('topbar-date2');
+if (_topbarDate2) _topbarDate2.textContent = _todayStr;
 
-Store.setSyncCb((s,label) => {
-  document.getElementById('sync-dot').className = 'sync-dot ' + s;
-  document.getElementById('sync-label').textContent = label;
+/* Sync status → topbar */
+Store.setSyncCb((s, label) => {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  if (dot) dot.className = 'sync-dot ' + s;
+  if (lbl) lbl.textContent = label;
 });
 
-/* ── Gist modal ── */
+/* Import handler */
+document.getElementById('import-input').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    await Store.importJSON(file);
+    renderCurrentPage();
+    UI.toast('Imported & synced ✓', 'ok');
+  } catch { UI.toast('Invalid JSON file', 'err'); }
+  e.target.value = '';
+});
+
+/* Gist modal */
 function openGistModal() {
   const cfg = Store.getConfig();
   document.getElementById('gist-token-inp').value = cfg.token;
@@ -424,7 +504,7 @@ function openGistModal() {
   document.getElementById('gist-modal').classList.remove('hidden');
 }
 function closeGistModal() { document.getElementById('gist-modal').classList.add('hidden'); }
-document.getElementById('gist-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeGistModal(); });
+document.getElementById('gist-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeGistModal(); });
 
 async function saveGistConfig() {
   Store.setConfig(
@@ -433,76 +513,82 @@ async function saveGistConfig() {
   );
   closeGistModal();
   const ok = await Store.gistFetch();
-  if (ok) { renderCurrentPage(); UI.toast('Connected! Data loaded ✓','ok'); }
-  else if (Store.getConfig().token) { await Store.gistPush(); UI.toast('New Gist created & data pushed ✓','ok'); }
-  else UI.toast('Enter a token to connect','warn');
+  if (ok) { renderCurrentPage(); UI.toast('Connected! Data loaded ✓', 'ok'); }
+  else if (Store.getConfig().token) { await Store.gistPush(); UI.toast('New Gist created & data pushed ✓', 'ok'); }
+  else UI.toast('Enter a token to connect', 'warn');
   Router.refreshBadges();
 }
 
 async function manualSyncNow() {
   const ok = await Store.manualSync();
-  if (ok) { renderCurrentPage(); UI.toast('Synced ✓','ok'); }
-  else UI.toast('Sync failed — check token in Gist settings','err');
+  if (ok) { renderCurrentPage(); UI.toast('Synced ✓', 'ok'); }
+  else UI.toast('Sync failed — check token in Gist settings', 'err');
 }
 
-/* ── Solve modal tab switch ── */
+/* Solve modal code tab switch */
 function tsSwitchTab(tab, el) {
-  document.querySelectorAll('#todo-solve-modal .ced-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#todo-solve-modal .ced-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('ts-pane-brute').style.display  = tab==='brute'  ?'block':'none';
-  document.getElementById('ts-pane-optimal').style.display= tab==='optimal'?'block':'none';
+  document.getElementById('ts-pane-brute').style.display  = tab === 'brute'   ? 'block' : 'none';
+  document.getElementById('ts-pane-optimal').style.display = tab === 'optimal' ? 'block' : 'none';
+  document.getElementById('ts-pane-brute').className  = 'code-pane' + (tab === 'brute'   ? ' active' : '');
+  document.getElementById('ts-pane-optimal').className = 'code-pane' + (tab === 'optimal' ? ' active' : '');
 }
 
-/* ── Job password toggle ── */
+/* Job password toggle */
 function toggleJobPw() {
   const inp  = document.getElementById('job-password');
   const icon = document.getElementById('job-pw-eye');
-  if (inp.type==='password') { inp.type='text'; icon.className='ti ti-eye-off'; }
-  else { inp.type='password'; icon.className='ti ti-eye'; }
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text';     icon.className = 'ti ti-eye-off'; }
+  else                         { inp.type = 'password'; icon.className = 'ti ti-eye'; }
 }
 
-/* ── Knowledge topic item style ── */
-const knStyle = document.createElement('style');
-knStyle.textContent = `
-  .kn-topic-item { display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:var(--r);cursor:pointer;border:1px solid var(--line);background:var(--bg2);transition:all .12s; }
-  .kn-topic-item:hover { border-color:var(--line2); }
-  .kn-topic-item.active { border-color:var(--accent);background:var(--accent-d2); }
-  .kn-topic-name { flex:1;font-family:var(--font-head);font-size:13px;font-weight:500;color:var(--txt); }
-  .kn-topic-count { font-size:10px;font-family:var(--font-mono);background:var(--bg4);color:var(--txt3);padding:1px 6px;border-radius:99px; }
-  .kn-content-header { display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap; }
-`;
-document.head.appendChild(knStyle);
+/* Document viewer close */
+function closeDocViewer() {
+  const overlay = document.getElementById('doc-viewer-overlay');
+  const frame   = document.getElementById('doc-viewer-frame');
+  if (overlay) overlay.classList.add('hidden');
+  if (frame)   frame.src = '';
+  document.body.style.overflow = '';
+}
+// Also close Resources viewer through the module
+window._closeResViewer = () => Pages.Resources?.closeViewer?.();
 
-/* ── Import ── */
-document.getElementById('import-input').addEventListener('change', async e => {
-  const file = e.target.files[0]; if (!file) return;
-  try { await Store.importJSON(file); renderCurrentPage(); UI.toast('Imported & synced ✓','ok'); }
-  catch { UI.toast('Invalid JSON file','err'); }
-  e.target.value='';
-});
+/* Mobile sidebar toggle */
+const mobBtn = document.getElementById('mob-menu-btn');
+const sidebar = document.getElementById('sidebar');
+if (mobBtn) {
+  mobBtn.style.display = '';
+  mobBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+  // Close on nav click
+  sidebar.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => sidebar.classList.remove('open'));
+  });
+  // Show button only on mobile
+  function checkMob() { mobBtn.style.display = window.innerWidth <= 960 ? '' : 'none'; }
+  checkMob();
+  window.addEventListener('resize', checkMob);
+}
 
-/* ── renderCurrentPage ── */
+/* Re-render current page after sync */
 function renderCurrentPage() {
   const p = Router.current();
   const map = {
-    dashboard:'Dashboard', problems:'Problems', log:'LogForm',
-    dayview:'DayView', todo:'Todo', revision:'Revision',
-    videos:'Videos', java:'Java', interviews:'Interviews',
-    resume:'Resume', knowledge:'Knowledge', jobs:'Jobs',
+    dashboard: 'Dashboard', problems: 'Problems', log: 'LogForm',
+    dayview: 'DayView', todo: 'Todo', revision: 'Revision',
+    resources: 'Resources', interviews: 'Interviews', resume: 'Resume',
+    knowledge: 'Knowledge', jobs: 'Jobs', planner: 'Planner',
   };
   const name = map[p];
-  if (name && Pages[name]?.render) Pages[name].render();
+  if (name && window.Pages?.[name]?.render) Pages[name].render();
   Router.refreshBadges();
 }
 
-/* ── Init ── */
-// v3.1 [FIXED: 2025-prompt-3]
-// REMOVED: Pages.LogForm.render() at boot — it caused `wired=true` to be set
-// before the user ever navigated to Log Problem, so the form never worked.
-// The router now calls LogForm.render() correctly when user clicks "Log Problem".
+/* Init */
 (async () => {
   await Store.init();
-  Router.init();        // navigates to dashboard, wires all nav-items
+  Router.init();
   Router.refreshBadges();
 })();
 </script>
